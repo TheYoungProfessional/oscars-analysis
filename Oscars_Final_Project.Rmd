@@ -1,64 +1,131 @@
 ---
 title: "Oscars_Final_Project"
-author: "Michael Overman"
-date: "2026-05-04"
-output: pdf_document
+author: "Michael Overman, Sose Ehize, Coral Tracy, & Nicolas Brunetto"
+date: "2026-05-07"
+output:
+  pdf_document:
+    latex_engine: lualatex
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
-```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
-
 ## Data Introduction
 
 The dataset we chose to explore is the set of Oscar winners of Best Actor and
 Best Actress from 1929 to 2018. The dataset comes from the Journal of Statistical Education, http://jse.amstat.org/datasets/oscars.dat.txt, updated through 2019 using information from Oscars.org and Wikipedia.org.
 
-Each row of the dataset states the best actor/ actress from 1929-2018.If there is a tie, that makes there an extra winner for that year. This is essentially a full population of the winners for the best actor/actress in the Oscars, but it is also a sample because it doesn't go into all the awards that could be given out in the Oscars.
+Each row of the dataset states the best actor/ actress from 1929-2018. If there is a tie, that makes there an extra winner for that year. This is a sample of the winners for Best Actor and Best Actress in the Oscar’s from 1929 to 2018. It is not a full population, as there will be further Oscar awards in the future, as well as there being other awards besides Best Actor/Actress that are not covered herein.
 
 The full dataset contains 182 observations of 10 variables. Our report is concerned with 7 of
 these variables for each observation: 
-1. age - a numerical, discrete variable.
-2. oscar_yr - the year the Oscar was awarded. This is a numerical(nominal?), discrete variable.
-3. birth_y - the year the award-winning actor/actress was born. This is a nominal, discrete variable.
+
+1. age - a numerical, continuous variable.
+
+2. oscar_yr - the year the Oscar was awarded. This is a numerical, discrete variable.
+
+3. birth_y - the year the award-winning actor/actress was born. This is a numerical, discrete variable.
+
 4. award - either 'Best Actor' or 'Best Actress'. This is a categorical variable.
+
 5. birth_pl - the location the actor/actress was born. This is a categorical variable.
+
 6. movie - the film the actor/actress won their Oscar for. This is a categorical variable.
+
 7. name - the name of the award-winning actor/actress. This is a categorical variable.
 
 ## Research Questions & Hypotheses
 
-Our research question is this: Is there a difference in average age between 'Best Actor' and
-'Best Actress', and does this change from the period 1929-1974 to the period 1975-2018?
+Our research question is this: Is there a difference in average age between 'Best Actor' and 'Best Actress'?
 
-Our null hypothesis: There is no difference in average age between 'Best Actor' and 'Best
-Actress', and this does not change from the period 1929-1974 to the period 1975-2018.
+Our null hypothesis: There is no difference in average age between 'Best Actor' and 'Best Actress'.
 
-Our alternative hypothesis: There is a difference in average age between 'Best Actor' and
-'Best Actress', and this difference changes from the period 1929-1974 to the period 1975-2018.
+    H₀: μ_actress = μ_actor
+
+Our alternative hypothesis: There is a difference in average age between 'Best Actor' and 'Best Actress'.
+
+    Hₐ: μ_actress ≠ μ_actor
+
+Where:
+  
+μ_actress = mean age of 'Best Actress'
+  
+μ_actor   = mean age of 'Best Actor'
+
+  Type 1 error: Concluding that there is a difference in average age of Best Actress and Best Actor, when there is no difference.
+
+  Type 2 error: Concluding that there is no difference in average age of Best Actress and Best Actor, when there is a difference.
+
+  A Type 1 error would be worse, because an incorrect conclusion that there are gender-based differences in the filmmaking industry could lead to ungrounded claims of gender bias in the industry, thereby leading to attempts to fix a problem that might not exist.
 
 ## Data Summary & Visualization
+```{r, message=FALSE}
+library("tidyverse")
+load("oscars.rda")
+
+winners <- oscars %>% #pipe operator
+  select(!c(birth_date, birth_mo, birth_d)) %>%
+  arrange(oscar_yr)
+
+winners %>%
+  group_by(award) %>%
+  summarise(
+    mean_age = mean(age),
+    sd_age = sd(age),
+    n = n()
+  )
+```
+
+```{r}
+# Boxplot
+ggplot(winners, aes(x = award, y = age, fill = award)) +
+  geom_boxplot() +
+  labs(
+    title = "Age of Oscar Winners by Award Category",
+    x = "Award Category",
+    y = "Age at Time of Award"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+The box plot tells us a handful of interesting things. Because 
+A) both plots have a larger upper quartile, and
+B) they have outliers on the upper end of the age range,
+we can see that both plots are mildly skewed to the right.
+
+Furthermore, the box plot shows us that there is a greater range and variability of ages for actors than there is for actors. We know this for a few reasons. First, Best Actress has more extreme outliers than Best Actor. Secondly, Best Actress has a slightly larger inter-quartile range (IQR), and finally, the whiskers of the plot for Best Actress spread somewhat farther than they do for Best Actor.
+  
+```{r}
+# Bar chart of mean age
+winners %>%
+  group_by(award) %>%
+  summarise(mean_age = mean(age), .groups = "drop") %>%
+  ggplot(aes(x = award, y = mean_age, fill = award)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Mean Age of Oscar Winners by Award Category",
+    x = "Award Category",
+    y = "Mean Age"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+The bar chart gives us an intuitive sense of the scale on which the means are different, and shows that the mean Best Actor is older than the mean Best Actress.
 
 ## Data Analysis
+```{r}
+t.test(age ~ award, data = winners)
+```
+
+Our analysis shows a clear and meaningful difference in the ages at which Best Actor and Best Actress winners receive their Oscars. Best Actor winners had an average age of about 44 years (SD ≈ 8.9), while Best Actress winners averaged about 36 years (SD ≈ 11.4), revealing an age gap of roughly eight years. This difference is not only visible in the descriptive statistics but also supported by the independent samples t‑test, which confirmed that the gap is statistically significant (p < 0.05). The box plot illustrates that actors tend to win later in life, with a tighter age range centered around the mid‑40s, whereas actresses show both a lower median age and greater variability, including several younger winners in their 20s and a few older outliers. The bar chart reinforces this pattern by showing a noticeably higher mean age for actors.
 
 ## Conclusion
+
+In conclusion, we reject the null hypothesis. There is a statistically significant difference in the average age of Best Actor vs. Best Actress winners. Male winners tend to be awarded about 8 years older than female winners on average. The box plot further reveals that the Best Actress distribution is more right-skewed with notable outliers (older winners), which suggests that while the average skews younger, some women do win at older ages. 
+
+Knowing that the null hypothesis is rejected, it remains to be seen whether this difference in average age correlates to the award’s time period.
+
+The impact of the result lies in its implications on gender bias. The fact that female winners are younger on average could suggest that youth is more valued in actresses than experience or skill.
